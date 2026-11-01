@@ -9,6 +9,9 @@ env/
 ENV/
 .env
 
+# Static collected
+staticfiles/
+
 # Database journals
 *.sqlite3-journal
 
@@ -17,4 +20,3 @@ ENV/
 .idea/
 .DS_Store
 Thumbs.db
-
