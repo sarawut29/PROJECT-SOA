@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexBenefit & Health Claim Verification System (SOA)</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- แถบด้านบน (Navbar) -->
+    <header class="navbar">
+        <div class="nav-brand">
+            <span class="brand-badge">SOA-2569</span>
+            <h2>FlexBenefit <span>Portal</span></h2>
+        </div>
+        <div class="nav-user" id="nav-user-section" style="display: none;">
+            <div class="user-info">
+                <span id="user-display-name" class="user-name">Somchai</span>
+                <span id="user-role-badge" class="role-badge">Employee</span>
+            </div>
+            <button id="btn-logout" class="btn-logout">ออกจากระบบ</button>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- 1. ส่วนเข้าสู่ระบบ (จะซ่อนเมื่อ Login แล้ว) -->
+        <section id="auth-section" class="card login-card">
+            <div class="card-header">
+                <h3>เข้าสู่ระบบพนักงาน</h3>
+                <p>กรุณาเข้าสู่ระบบด้วยบัญชีเพื่อจัดการสวัสดิการและยื่นเคลม</p>
+            </div>
+            <form id="form-login">
+                <div class="form-group">
+                    <label for="login-username">ชื่อผู้ใช้ (Username)</label>
+                    <input type="text" id="login-username" placeholder="ระบุ username เช่น admin หรือ รหัสพนักงาน" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">รหัสผ่าน (Password)</label>
+                    <input type="password" id="login-password" placeholder="ระบุรหัสผ่าน" required>
+                </div>
+                <button type="submit" class="btn-primary btn-block" id="btn-login-submit">เข้าสู่ระบบ (JWT Login)</button>
+            </form>
+            <div id="login-alert" class="alert error" style="display: none;"></div>
+        </section>
+
+        <!-- 2. หน้า Dashboard หลัก (แสดงหลัง Login สำเร็จ) -->
+        <main id="dashboard-section" style="display: none;">
+            
+            <!-- การ์ดสรุปข้อมูลและแต้มคงเหลือ -->
+            <div class="dashboard-grid">
+                <div class="card balance-card">
+                    <div class="balance-header">
+                        <span class="label">แต้มสวัสดิการคงเหลือ (Flexi-Points)</span>
+                        <span class="icon">💳</span>
+                    </div>
+                    <div class="balance-amount">
+                        <span id="user-balance">0.00</span>
+                        <small>คะแนน (THB)</small>
+                    </div>
+                    <div class="balance-footer">
+                        <span>แผนก: <strong id="user-department">-</strong></span>
+                        <span>เลขกรมธรรม์: <strong id="user-policy">-</strong></span>
+                    </div>
+                </div>
+
+                <div class="card summary-card">
+                    <h4>สิทธิประโยชน์ของท่าน</h4>
+                    <p>ระบบเชื่อมต่อกับ <strong>Corporate Insurance Gateway</strong>: หมวดหมู่สุขภาพจะได้รับการคุ้มครองประกันกลุ่ม 70% ส่วนต่างจะหักจากแต้มสวัสดิการโดยอัตโนมัติ</p>
+                </div>
+            </div>
+
+            <!-- 2.1 แผงควบคุมฝ่ายบุคคล (เฉพาะ HR Admin / Staff เท่านั้น) -->
+            <section id="hr-panel-section" class="card hr-card" style="display: none;">
+                <div class="card-header flex-between">
+                    <div>
+                        <h3>🛡️ แผงตรวจสอบและอนุมัติคำขอ (HR Approval Panel)</h3>
+                        <p>ตรวจสอบและอนุมัติคำขอเบิกสวัสดิการของพนักงานทั้งหมดที่อยู่ในสถานะรออนุมัติ</p>
+                    </div>
+                    <span class="badge badge-hr">สิทธิ์ฝ่ายบุคคล (HR Admin)</span>
+                </div>
+
+                <div id="hr-action-alert" class="alert" style="display: none;"></div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>รหัส</th>
+                                <th>พนักงาน</th>
+                                <th>วันที่ยื่น</th>
+                                <th>เลขที่ใบเสร็จ</th>
+                                <th>รายการ</th>
+                                <th>หมวดหมู่</th>
+                                <th>ยอดใบเสร็จ</th>
+                                <th>ประกันจ่าย</th>
+                                <th>หักแต้ม</th>
+                                <th>การอนุมัติ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hr-pending-table-body">
+                            <tr>
+                                <td colspan="10" class="text-center">กำลังโหลดรายการรออนุมัติ...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ฟอร์มยื่นคำขอเคลมสวัสดิการใหม่ -->
+            <section class="card form-card">
+                <div class="card-header">
+                    <h3>ยื่นคำขอเบิกสวัสดิการใหม่ (Submit Claim)</h3>
+                    <p>กรอกข้อมูลใบเสร็จและหมวดหมู่ ระบบจะประมวลผลคำนวณสิทธิ์ทันที (สถานะเริ่มต้น: PENDING)</p>
+                </div>
+
+                <form id="form-claim">
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="claim-category">หมวดหมู่สวัสดิการ</label>
+                            <select id="claim-category" required>
+                                <option value="">-- กำลังโหลดหมวดหมู่สวัสดิการ... --</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="claim-receipt-number">เลขที่ใบเสร็จ / ใบกำกับภาษี</label>
+                            <input type="text" id="claim-receipt-number" placeholder="เช่น INV-2026-0012" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="claim-amount">ยอดตามใบเสร็จ (บาท)</label>
+                            <input type="number" id="claim-amount" step="0.01" min="1" placeholder="เช่น 3000.00" required>
+                        </div>
+                    </div>
+
+                    <!-- แจ้งเตือนเงื่อนไขหมวดหมู่ -->
+                    <div id="category-hint" class="hint-box" style="display: none;"></div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="claim-title">รายละเอียดรายการ / ร้านค้า / โรงพยาบาล</label>
+                            <input type="text" id="claim-title" placeholder="เช่น ค่าทำฟันอุดฟันคลินิกทันตกรรม หรือ คอร์สเรียนออนไลน์" required>
+                        </div>
+                        <div class="form-group flex-1" id="group-medical-code">
+                            <label for="claim-medical-code">รหัสการรักษา / โรค (ถ้ามี)</label>
+                            <input type="text" id="claim-medical-code" placeholder="เช่น DENT01, J00">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-success" id="btn-submit-claim">
+                        <span>⚡ ประมวลผลและยื่นเคลมสวัสดิการ</span>
+                    </button>
+                </form>
+
+                <div id="claim-result-alert" class="alert" style="display: none;"></div>
+            </section>
+
+            <!-- ตารางประวัติการเคลมและสถานะ -->
+            <section class="card table-card">
+                <div class="card-header flex-between">
+                    <div>
+                        <h3>ประวัติการยื่นเคลมสวัสดิการ (Claim History)</h3>
+                        <p>รายการที่ผ่านการประมวลผลและการอนุมัติ</p>
+                    </div>
+                    <button id="btn-refresh-claims" class="btn-outline">🔄 รีเฟรชข้อมูล</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>รหัส</th>
+                                <th>วันที่ยื่น</th>
+                                <th>เลขที่ใบเสร็จ</th>
+                                <th>รายการ</th>
+                                <th>หมวดหมู่</th>
+                                <th>ยอดใบเสร็จ</th>
+                                <th>ประกันช่วยจ่าย</th>
+                                <th>หักแต้มจริง</th>
+                                <th>สถานะ</th>
+                                <th>หมายเหตุการประมวลผล</th>
+                            </tr>
+                        </thead>
+                        <tbody id="claims-table-body">
+                            <tr>
+                                <td colspan="10" class="text-center">กำลังโหลดข้อมูล...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
